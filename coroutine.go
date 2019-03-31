@@ -6,7 +6,10 @@ import (
 	"time"
 )
 
-var ErrTimeOut = errors.New("timeout")
+var (
+	ErrCorsTimeout = errors.New("cors timeout")
+	ErrCorsStopped = errors.New("cors stopped")
+)
 
 func Go(cb func()) {
 	go func() {
@@ -35,8 +38,9 @@ func Go(cb func()) {
 
 type Cors struct {
 	sync.WaitGroup
-	tag string
-	ch  chan func()
+	tag     string
+	ch      chan func()
+	running bool
 }
 
 func (c *Cors) runLoop(partition int) {
@@ -53,31 +57,40 @@ func (c *Cors) runLoop(partition int) {
 	})
 }
 
-func (c *Cors) Go(h func()) {
+func (c *Cors) Go(h func()) error {
+	if !c.running {
+		return ErrCorsStopped
+	}
 	c.Add(1)
 	c.ch <- h
+	return nil
 }
 
 func (c *Cors) GoWithTimeout(h func(), to time.Duration) error {
+	if !c.running {
+		return ErrCorsStopped
+	}
 	c.Add(1)
 	select {
 	case c.ch <- h:
 	case <-time.After(to):
 		c.Done()
-		return ErrTimeOut
+		return ErrCorsTimeout
 	}
 	return nil
 }
 
 func (c *Cors) Stop() {
+	c.running = false
 	close(c.ch)
 	c.Wait()
 }
 
 func NewCors(tag string, qCap int, corNum int) *Cors {
 	c := &Cors{
-		tag: tag,
-		ch:  make(chan func(), qCap),
+		tag:     tag,
+		ch:      make(chan func(), qCap),
+		running: true,
 	}
 	for i := 0; i < corNum; i++ {
 		c.Add(1)
