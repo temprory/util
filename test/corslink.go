@@ -22,21 +22,28 @@ func main() {
 		delay := time.Second + time.Duration(rand.Intn(10))*time.Second/10
 
 		cl.Go(func(task *util.LinkTask) {
-			//fmt.Println("begin", idx, delay)
+			//slow fuck things
 			time.Sleep(delay)
-			preData := task.Pre()
+			currData := idx
+
+			//wait for pre task done
+			preData := task.WaitPre()
+
+			//handle result after slow fuck
 			fmt.Println("preData:", preData)
 			fmt.Println("end", idx)
-			currData := idx
-			task.Next(currData)
-
 			allData = append(allData, currData)
+
+			//release this task
+			//task.Done(currData)
+			task.Done(nil)
+
+			//退出任务，可选
 			if idx == 49 {
 				defer wg.Done()
 				cl.StopAsync()
 				time.Sleep(time.Second)
 			}
-
 		})
 
 	}

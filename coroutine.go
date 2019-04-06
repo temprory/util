@@ -105,11 +105,11 @@ type LinkTask struct {
 	ch     chan interface{}
 }
 
-func (task *LinkTask) Next(data interface{}) {
+func (task *LinkTask) Done(data interface{}) {
 	task.ch <- data
 }
 
-func (task *LinkTask) Pre() interface{} {
+func (task *LinkTask) WaitPre() interface{} {
 	if task.pre != nil {
 		return <-task.pre
 	}
