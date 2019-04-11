@@ -4,20 +4,17 @@ import (
 	"database/sql"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/temprory/util"
 )
 
-func clearTransaction(tx *sql.Tx) {
-	err := tx.Rollback()
-	if err != nil && err != sql.ErrTxDone {
-		fmt.Printf("clearTransaction failed: %v\n", err)
-	}
-}
+// func clearTransaction(tx *sql.Tx) {
+// 	err := tx.Rollback()
+// 	if err != nil && err != sql.ErrTxDone {
+// 		fmt.Printf("clearTransaction failed: %v\n", err)
+// 	}
+// }
 
 func one(i int, db *sql.DB, rollback bool) error {
-	defer func() {
-		recover()
-	}()
-
 	defer fmt.Printf("--- one done %v\n", i)
 	tx, err := db.Begin()
 	if err != nil {
@@ -26,7 +23,7 @@ func one(i int, db *sql.DB, rollback bool) error {
 	}
 
 	if rollback {
-		defer clearTransaction(tx)
+		defer util.ClearTx(tx)
 	}
 
 	sqlstr := "select 1 from dual"
