@@ -10,6 +10,17 @@ const (
 	separator = "---------------------------------------\n"
 )
 
+var panicHandler func(string)
+
+func OnPanic(h func(string)) {
+	panicHandler = func(str string) {
+		defer func() {
+			recover()
+		}()
+		h(str)
+	}
+}
+
 func HandlePanic() {
 	if err := recover(); err != nil {
 		errstr := fmt.Sprintf("%sruntime error: %v\ntraceback:\n", separator, err)
@@ -25,7 +36,11 @@ func HandlePanic() {
 		}
 		errstr += separator
 
-		logError(errstr)
+		if panicHandler != nil {
+			panicHandler(errstr)
+		} else {
+			logError(errstr)
+		}
 	}
 }
 

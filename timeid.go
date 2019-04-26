@@ -11,7 +11,6 @@ var _timeIdMtx = &sync.Mutex{}
 func TimeID(n int) (string, error) {
 	_timeIdMtx.Lock()
 	defer _timeIdMtx.Unlock()
-	time.Sleep(time.Second / 950)
 	nano := time.Now().UnixNano()
 	ids := fmt.Sprintf("%v", nano)
 	if n > len(ids) {
