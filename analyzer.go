@@ -17,16 +17,17 @@ func SetAnalyzerDebug(d bool) {
 }
 
 type Analyzer struct {
-	Tag        string
-	Parent     *Analyzer `json:"-"`
-	Children   []*Analyzer
-	Limit      time.Duration
-	TBegin     time.Time
-	TEnd       time.Time
-	StackBegin string
-	StackEnd   string
-	Data       interface{}
-	expired    bool
+	Tag          string
+	Parent       *Analyzer `json:"-"`
+	Children     []*Analyzer
+	Limit        time.Duration
+	TBegin       time.Time
+	TEnd         time.Time
+	StackBegin   string
+	StackEnd     string
+	Data         interface{}
+	Expired      bool
+	ChildExpired bool
 }
 
 func getStackInfo() string {
@@ -54,12 +55,20 @@ func (a *Analyzer) Done(v ...interface{}) {
 	if len(v) > 0 {
 		a.Data = v[0]
 	}
-	a.expired = a.TEnd.Sub(a.TBegin) > a.Limit
-	if a.expired {
+	// if a.Expired {
+	// 	return
+	// }
+	a.Expired = a.TEnd.Sub(a.TBegin) > a.Limit
+	if a.Expired {
+		//fmt.Println("+++", a.Tag)
 		tmp := a.Parent
 		for tmp != nil {
+			//fmt.Println("---", tmp.Tag)
 			//fmt.Println(a.Tag)
-			tmp.expired = true
+			if tmp.ChildExpired {
+				return
+			}
+			tmp.ChildExpired = true
 			tmp = tmp.Parent
 		}
 	}
@@ -96,16 +105,16 @@ func (a *Analyzer) Fork(tag string, limit time.Duration) *Analyzer {
 // 	return infoStr, expired
 // }
 
-func (a *Analyzer) Expired() bool {
-	// used := a.TEnd.Sub(a.TBegin)
-	// expired := used > a.Limit
-	// for _, v := range a.Children {
-	// 	if v.Expired() {
-	// 		return true
-	// 	}
-	// }
-	return a.expired
-}
+// func (a *Analyzer) Expired() bool {
+// 	// used := a.TEnd.Sub(a.TBegin)
+// 	// expired := used > a.Limit
+// 	// for _, v := range a.Children {
+// 	// 	if v.Expired() {
+// 	// 		return true
+// 	// 	}
+// 	// }
+// 	return a.expired
+// }
 
 func (a *Analyzer) Info() string {
 	if analyzerDebug {

@@ -7,46 +7,50 @@ import (
 )
 
 func A() {
-	analyzer := util.NewAnalyzer("A", time.Second)
-	analyzer.Begin()
-	B(analyzer.Fork("B", time.Second/2))
-	C(analyzer.Fork("C", time.Second/2))
+	a := util.NewAnalyzer("A", time.Second)
+	a.Begin()
+
+	B(a.Fork("B", time.Second/20))
+
+	C(a.Fork("C", time.Second/20))
 
 	aInfo := map[string]interface{}{
 		"name":   "test",
 		"passwd": "123qwe",
 	}
-	analyzer.Done(aInfo)
+	a.Done(aInfo)
 
-	if analyzer.Expired() {
-		fmt.Println(analyzer.Info())
+	if a.Expired {
+		fmt.Println("expired:", a.Info())
+	} else if a.ChildExpired {
+		fmt.Println("child expired:", a.Info())
 	}
 }
 
-func B(analyzer *util.Analyzer) {
-	analyzer.Begin()
+func B(a *util.Analyzer) {
+	a.Begin()
 
-	time.Sleep(time.Second / 2)
+	time.Sleep(time.Second / 20)
 
-	D(analyzer.Fork("D", time.Second/2))
+	D(a.Fork("D", time.Second/20))
 
-	analyzer.Done("binfo")
+	a.Done("binfo")
 }
 
-func C(analyzer *util.Analyzer) {
-	analyzer.Begin()
+func C(a *util.Analyzer) {
+	a.Begin()
 
-	D(analyzer.Fork("D", time.Second/2))
+	D(a.Fork("D", time.Second/20))
 
-	analyzer.Done()
+	a.Done()
 }
 
-func D(analyzer *util.Analyzer) {
-	analyzer.Begin()
+func D(a *util.Analyzer) {
+	a.Begin()
 
-	time.Sleep(time.Second / 10 * 6)
+	time.Sleep(time.Second / 10)
 
-	analyzer.Done()
+	a.Done()
 }
 
 // go build -ldflags "-X github.com/temprory/log.BuildDir=C:/Users/User/Desktop/" test_analyzer.go
