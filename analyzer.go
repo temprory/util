@@ -74,6 +74,29 @@ func (a *Analyzer) Done(v ...interface{}) {
 	}
 }
 
+func (a *Analyzer) Report(v ...interface{}) {
+	a.TEnd = time.Now()
+	a.StackEnd = getStackInfo()
+	if len(v) > 0 {
+		a.Data = v[0]
+	}
+	a.Expired = a.TEnd.Sub(a.TBegin) > a.Limit
+	if a.Expired {
+		tmp := a.Parent
+		for tmp != nil {
+			if tmp.ChildExpired {
+				return
+			}
+			tmp.ChildExpired = true
+			tmp = tmp.Parent
+		}
+	}
+
+	if a.Expired || a.ChildExpired {
+		fmt.Println(a.Info())
+	}
+}
+
 func (a *Analyzer) Fork(tag string, limit time.Duration) *Analyzer {
 	analyzer := &Analyzer{
 		Tag:    tag,
