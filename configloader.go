@@ -20,7 +20,11 @@ func (loader *ConfigLoader) Add(configKey string, configFieled string, onUpdate 
 	loader.Lock()
 	defer loader.Unlock()
 
-	timer := time.NewTimer(loader.updateInterval)
+	var timer *time.Timer
+
+	if loader.updateInterval > 0 {
+		timer = time.NewTimer(loader.updateInterval)
+	}
 
 	update := func() {
 		Safe(func() {
@@ -34,22 +38,26 @@ func (loader *ConfigLoader) Add(configKey string, configFieled string, onUpdate 
 			}
 		})
 
-		timer.Reset(loader.updateInterval)
+		if loader.updateInterval > 0 {
+			timer.Reset(loader.updateInterval)
+		}
 	}
 
 	loader.updateTasks[configKey+":"+configFieled] = update
 
-	Go(func() {
-		for {
-			select {
-			case _, ok := <-timer.C:
-				if !ok {
-					return
+	if loader.updateInterval > 0 {
+		Go(func() {
+			for {
+				select {
+				case _, ok := <-timer.C:
+					if !ok {
+						return
+					}
+					update()
 				}
-				update()
 			}
-		}
-	})
+		})
+	}
 
 	golog.Infof("ConfigLoader, Add Item, configKey: %v, configFieled: %v", configKey, configFieled)
 
