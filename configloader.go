@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/go-redis/redis"
-	"github.com/kataras/golog"
 )
 
 type ConfigLoader struct {
@@ -16,10 +15,11 @@ type ConfigLoader struct {
 	updateTasks    map[string]func()
 }
 
-func (loader *ConfigLoader) Add(configKey string, configFieled string, onUpdate func(string, string)) {
+func (loader *ConfigLoader) Add(configKey string, configFieled string, onUpdate func(string, string) error) {
 	loader.Lock()
 	defer loader.Unlock()
 
+	var preConfStr string
 	var timer *time.Timer
 
 	if loader.updateInterval > 0 {
@@ -30,17 +30,18 @@ func (loader *ConfigLoader) Add(configKey string, configFieled string, onUpdate 
 		Safe(func() {
 			confStr, err := loader.redisCli.HGet(configKey, configFieled).Result()
 			if err != nil {
-				golog.Infof("ConfigLoader load config %v failed: %v", configKey, err)
+				logInfo("ConfigLoader load config %v failed: %v", configKey, err)
 				return
 			}
-			if len(confStr) > 0 {
-				onUpdate(configKey+":"+configFieled, confStr)
+			if len(confStr) > 0 && confStr != preConfStr {
+				if onUpdate(configKey+":"+configFieled, confStr) == nil {
+					preConfStr = confStr
+					if loader.updateInterval > 0 {
+						timer.Reset(loader.updateInterval)
+					}
+				}
 			}
 		})
-
-		if loader.updateInterval > 0 {
-			timer.Reset(loader.updateInterval)
-		}
 	}
 
 	loader.updateTasks[configKey+":"+configFieled] = update
@@ -59,7 +60,7 @@ func (loader *ConfigLoader) Add(configKey string, configFieled string, onUpdate 
 		})
 	}
 
-	golog.Infof("ConfigLoader, Add Item, configKey: %v, configFieled: %v", configKey, configFieled)
+	logInfo("ConfigLoader, Add Item, configKey: %v, configFieled: %v", configKey, configFieled)
 
 	update()
 }
@@ -87,7 +88,7 @@ func NewConfigLoader(redisCli *redis.Client, pubsubKey string, updateInterval ti
 		}
 	})
 
-	golog.Infof("NewConfigLoader, pubsubKey: %v, updateInterval: %v", pubsubKey, updateInterval)
+	logInfo("NewConfigLoader, pubsubKey: %v, updateInterval: %v", pubsubKey, updateInterval)
 
 	return loader
 }
