@@ -31,6 +31,9 @@ func (loader *ConfigLoader) Add(configKey string, configFieled string, onUpdate 
 			confStr, err := loader.redisCli.HGet(configKey, configFieled).Result()
 			if err != nil {
 				logInfo("ConfigLoader load config %v failed: %v", configKey, err)
+				if loader.updateInterval > 0 {
+					timer.Reset(loader.updateInterval)
+				}
 				return
 			}
 			if len(confStr) > 0 && confStr != preConfStr {
