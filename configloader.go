@@ -82,8 +82,8 @@ func NewConfigLoader(redisCli *redis.Client, pubsubKey string, updateInterval ti
 				pubsub := loader.redisCli.Subscribe(pubsubKey)
 				defer pubsub.Close()
 				for msg := range pubsub.Channel() {
-					configFieled := msg.Payload
-					if update, ok := loader.updateTasks[configFieled]; ok {
+					configTag := msg.Payload
+					if update, ok := loader.updateTasks[configTag]; ok {
 						update()
 					}
 				}
