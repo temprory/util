@@ -23,6 +23,7 @@ type Analyzer struct {
 	Limit        time.Duration
 	TBegin       time.Time
 	TEnd         time.Time
+	TUsed        time.Duration
 	StackBegin   string
 	StackEnd     string
 	Data         interface{}
@@ -58,7 +59,8 @@ func (a *Analyzer) Done(v ...interface{}) {
 	// if a.Expired {
 	// 	return
 	// }
-	a.Expired = a.TEnd.Sub(a.TBegin) > a.Limit
+	a.TUsed = a.TEnd.Sub(a.TBegin)
+	a.Expired = a.TUsed > a.Limit
 	if a.Expired {
 		//fmt.Println("+++", a.Tag)
 		tmp := a.Parent
@@ -80,7 +82,8 @@ func (a *Analyzer) Report(v ...interface{}) {
 	if len(v) > 0 {
 		a.Data = v[0]
 	}
-	a.Expired = a.TEnd.Sub(a.TBegin) > a.Limit
+	a.TUsed = a.TEnd.Sub(a.TBegin)
+	a.Expired = a.TUsed > a.Limit
 	if a.Expired {
 		tmp := a.Parent
 		for tmp != nil {
