@@ -36,10 +36,15 @@ func Go(cb func()) {
 // 	}()
 // }
 
+type CorsTask struct {
+	wg     *sync.WaitGroup
+	caller func()
+}
+
 type Cors struct {
 	sync.WaitGroup
 	tag     string
-	ch      chan func()
+	ch      chan CorsTask
 	running bool
 }
 
@@ -50,8 +55,16 @@ func (c *Cors) runLoop(partition int) {
 			// /logDebug("cors %v child-%v exit", c.tag, partition)
 			c.Done()
 		}()
-		for h := range c.ch {
-			Safe(h)
+		for task := range c.ch {
+			if task.wg == nil {
+				Safe(task.caller)
+			} else {
+				func() {
+					defer task.wg.Done()
+					defer HandlePanic()
+					task.caller()
+				}()
+			}
 			c.Done()
 		}
 	})
@@ -62,7 +75,7 @@ func (c *Cors) Go(h func()) error {
 		return ErrCorsStopped
 	}
 	c.Add(1)
-	c.ch <- h
+	c.ch <- CorsTask{nil, h}
 	return nil
 }
 
@@ -72,11 +85,45 @@ func (c *Cors) GoWithTimeout(h func(), to time.Duration) error {
 	}
 	c.Add(1)
 	select {
-	case c.ch <- h:
+	case c.ch <- CorsTask{nil, h}:
 	case <-time.After(to):
 		c.Done()
 		return ErrCorsTimeout
 	}
+	return nil
+}
+
+func (c *Cors) GoWait(h func()) error {
+	if !c.running {
+		return ErrCorsStopped
+	}
+	c.Add(1)
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+	c.ch <- CorsTask{wg, h}
+	wg.Wait()
+	return nil
+}
+
+func (c *Cors) GoWaitWithTimeout(h func(), to time.Duration) error {
+	if !c.running {
+		return ErrCorsStopped
+	}
+	c.Add(1)
+
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+
+	select {
+	case c.ch <- CorsTask{wg, h}:
+	case <-time.After(to):
+		c.Done()
+		wg.Done()
+		return ErrCorsTimeout
+	}
+
+	wg.Wait()
+
 	return nil
 }
 
@@ -89,7 +136,7 @@ func (c *Cors) Stop() {
 func NewCors(tag string, qCap int, corNum int) *Cors {
 	c := &Cors{
 		tag:     tag,
-		ch:      make(chan func(), qCap),
+		ch:      make(chan CorsTask, qCap),
 		running: true,
 	}
 	for i := 0; i < corNum; i++ {
