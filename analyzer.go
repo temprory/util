@@ -23,7 +23,7 @@ type Analyzer struct {
 	Limit        time.Duration
 	TBegin       time.Time
 	TEnd         time.Time
-	TUsed        time.Duration
+	TUsed        string
 	StackBegin   string
 	StackEnd     string
 	Data         interface{}
@@ -59,8 +59,9 @@ func (a *Analyzer) Done(v ...interface{}) {
 	// if a.Expired {
 	// 	return
 	// }
-	a.TUsed = a.TEnd.Sub(a.TBegin)
-	a.Expired = a.TUsed > a.Limit
+	tused := a.TEnd.Sub(a.TBegin)
+	a.TUsed = fmt.Sprintf("%.6f ms", float64(tused.Nanoseconds()/1000000)+float64(tused.Nanoseconds()%1000000)/float64(1000000))
+	a.Expired = tused > a.Limit
 	if a.Expired {
 		//fmt.Println("+++", a.Tag)
 		tmp := a.Parent
@@ -82,8 +83,9 @@ func (a *Analyzer) Report(v ...interface{}) {
 	if len(v) > 0 {
 		a.Data = v[0]
 	}
-	a.TUsed = a.TEnd.Sub(a.TBegin)
-	a.Expired = a.TUsed > a.Limit
+	tused := a.TEnd.Sub(a.TBegin)
+	a.TUsed = fmt.Sprintf("%.6f ms", float64(tused.Nanoseconds()/1000000)+float64(tused.Nanoseconds()%1000000)/float64(1000000))
+	a.Expired = tused > a.Limit
 	if a.Expired {
 		tmp := a.Parent
 		for tmp != nil {
