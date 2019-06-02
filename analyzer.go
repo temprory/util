@@ -47,10 +47,16 @@ func getStackInfo() string {
 }
 
 func (a *Analyzer) Begin() {
+	if a == nil {
+		return
+	}
 	a.StackBegin = getStackInfo()
 }
 
 func (a *Analyzer) Done(v ...interface{}) {
+	if a == nil {
+		return
+	}
 	a.TEnd = time.Now()
 	a.StackEnd = getStackInfo()
 	if len(v) > 0 {
@@ -78,6 +84,10 @@ func (a *Analyzer) Done(v ...interface{}) {
 }
 
 func (a *Analyzer) Report(v ...interface{}) {
+	if a == nil {
+		return
+	}
+
 	a.TEnd = time.Now()
 	a.StackEnd = getStackInfo()
 	if len(v) > 0 {
@@ -103,6 +113,10 @@ func (a *Analyzer) Report(v ...interface{}) {
 }
 
 func (a *Analyzer) Fork(tag string, limit time.Duration) *Analyzer {
+	if a == nil {
+		return nil
+	}
+
 	analyzer := &Analyzer{
 		Tag:    tag,
 		Parent: a,
@@ -145,6 +159,10 @@ func (a *Analyzer) Fork(tag string, limit time.Duration) *Analyzer {
 // }
 
 func (a *Analyzer) Info() string {
+	if a == nil {
+		return ""
+	}
+
 	if analyzerDebug {
 		data, _ := json.MarshalIndent(a, "", "    ")
 		return string(data)

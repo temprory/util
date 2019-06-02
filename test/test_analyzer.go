@@ -9,22 +9,18 @@ import (
 func A() {
 	a := util.NewAnalyzer("A", time.Second)
 	a.Begin()
+	defer func() {
+		a.Done()
+		if a.Expired {
+			fmt.Println("expired:", a.Info())
+		} else if a.ChildExpired {
+			fmt.Println("child expired:", a.Info())
+		}
+	}()
 
 	B(a.Fork("B", time.Second/20))
 
 	C(a.Fork("C", time.Second/20))
-
-	aInfo := map[string]interface{}{
-		"name":   "test",
-		"passwd": "123qwe",
-	}
-	a.Done(aInfo)
-
-	if a.Expired {
-		fmt.Println("expired:", a.Info())
-	} else if a.ChildExpired {
-		fmt.Println("child expired:", a.Info())
-	}
 }
 
 func B(a *util.Analyzer) {
@@ -57,4 +53,9 @@ func D(a *util.Analyzer) {
 func main() {
 	util.SetAnalyzerDebug(true)
 	A()
+
+	var a *util.Analyzer
+	a.Begin()
+	a.Done()
+	fmt.Println("empty info:", a.Info())
 }
