@@ -20,7 +20,8 @@ type Analyzer struct {
 	Tag          string
 	Parent       *Analyzer `json:"-"`
 	Children     []*Analyzer
-	Limit        time.Duration
+	Limit        time.Duration `json:"-"`
+	SLimit       string        `json:"Limit"`
 	TBegin       time.Time
 	TEnd         time.Time
 	TUsed        string
@@ -121,6 +122,7 @@ func (a *Analyzer) Fork(tag string, limit time.Duration) *Analyzer {
 		Tag:    tag,
 		Parent: a,
 		Limit:  limit,
+		SLimit: fmt.Sprintf("%.6f ms", float64(limit.Nanoseconds())/1000000),
 		TBegin: time.Now(),
 	}
 	a.Children = append(a.Children, analyzer)
@@ -175,6 +177,7 @@ func NewAnalyzer(tag string, limit time.Duration) *Analyzer {
 	return &Analyzer{
 		Tag:    tag,
 		Limit:  limit,
+		SLimit: fmt.Sprintf("%.6f ms", float64(limit.Nanoseconds())/1000000),
 		TBegin: time.Now(),
 	}
 }
