@@ -11,7 +11,7 @@ import (
 
 func main() {
 	fmt.Println("cornum 1: ", runtime.NumGoroutine())
-	cl := util.NewCorsLink("test", 100, 20)
+	cl := util.NewWorkersLink("test", 100, 20)
 	time.Sleep(time.Second)
 	wg := sync.WaitGroup{}
 	wg.Add(1)

@@ -12,7 +12,7 @@ func main() {
 	fmt.Println("cornum 1: ", runtime.NumGoroutine())
 
 	wg := sync.WaitGroup{}
-	cl := util.NewCorsLink("test", 100, 20)
+	cl := util.NewWorkersLink("test", 100, 20)
 	for i := 1; i <= 50; i++ {
 		idx := i
 		wg.Add(1)

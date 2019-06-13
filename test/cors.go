@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	cors := util.NewCors("test", 10, 5)
+	cors := util.NewWorkers("test", 10, 5)
 	wg := &sync.WaitGroup{}
 	for i := 0; i < 20; i++ {
 		idx := i

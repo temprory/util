@@ -7,8 +7,8 @@ import (
 )
 
 var (
-	ErrCorsTimeout = errors.New("cors timeout")
-	ErrCorsStopped = errors.New("cors stopped")
+	ErrWorkersTimeout = errors.New("cors timeout")
+	ErrWorkersStopped = errors.New("cors stopped")
 )
 
 func Go(cb func()) {
@@ -36,19 +36,19 @@ func Go(cb func()) {
 // 	}()
 // }
 
-type CorsTask struct {
+type workerTask struct {
 	wg     *sync.WaitGroup
 	caller func()
 }
 
-type Cors struct {
+type Workers struct {
 	sync.WaitGroup
 	tag     string
-	ch      chan CorsTask
+	ch      chan workerTask
 	running bool
 }
 
-func (c *Cors) runLoop(partition int) {
+func (c *Workers) runLoop(partition int) {
 	Go(func() {
 		// logDebug("cors %v child-%v start", c.tag, partition)
 		defer func() {
@@ -70,44 +70,44 @@ func (c *Cors) runLoop(partition int) {
 	})
 }
 
-func (c *Cors) Go(h func()) error {
+func (c *Workers) Go(h func()) error {
 	if !c.running {
-		return ErrCorsStopped
+		return ErrWorkersStopped
 	}
 	c.Add(1)
-	c.ch <- CorsTask{nil, h}
+	c.ch <- workerTask{nil, h}
 	return nil
 }
 
-func (c *Cors) GoWithTimeout(h func(), to time.Duration) error {
+func (c *Workers) GoWithTimeout(h func(), to time.Duration) error {
 	if !c.running {
-		return ErrCorsStopped
+		return ErrWorkersStopped
 	}
 	c.Add(1)
 	select {
-	case c.ch <- CorsTask{nil, h}:
+	case c.ch <- workerTask{nil, h}:
 	case <-time.After(to):
 		c.Done()
-		return ErrCorsTimeout
+		return ErrWorkersTimeout
 	}
 	return nil
 }
 
-func (c *Cors) GoWait(h func()) error {
+func (c *Workers) GoWait(h func()) error {
 	if !c.running {
-		return ErrCorsStopped
+		return ErrWorkersStopped
 	}
 	c.Add(1)
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
-	c.ch <- CorsTask{wg, h}
+	c.ch <- workerTask{wg, h}
 	wg.Wait()
 	return nil
 }
 
-func (c *Cors) GoWaitWithTimeout(h func(), to time.Duration) error {
+func (c *Workers) GoWaitWithTimeout(h func(), to time.Duration) error {
 	if !c.running {
-		return ErrCorsStopped
+		return ErrWorkersStopped
 	}
 	c.Add(1)
 
@@ -115,11 +115,11 @@ func (c *Cors) GoWaitWithTimeout(h func(), to time.Duration) error {
 	wg.Add(1)
 
 	select {
-	case c.ch <- CorsTask{wg, h}:
+	case c.ch <- workerTask{wg, h}:
 	case <-time.After(to):
 		c.Done()
 		wg.Done()
-		return ErrCorsTimeout
+		return ErrWorkersTimeout
 	}
 
 	wg.Wait()
@@ -127,16 +127,16 @@ func (c *Cors) GoWaitWithTimeout(h func(), to time.Duration) error {
 	return nil
 }
 
-func (c *Cors) Stop() {
+func (c *Workers) Stop() {
 	c.running = false
 	close(c.ch)
 	c.Wait()
 }
 
-func NewCors(tag string, qCap int, corNum int) *Cors {
-	c := &Cors{
+func NewWorkers(tag string, qCap int, corNum int) *Workers {
+	c := &Workers{
 		tag:     tag,
-		ch:      make(chan CorsTask, qCap),
+		ch:      make(chan workerTask, qCap),
 		running: true,
 	}
 	for i := 0; i < corNum; i++ {
@@ -163,7 +163,7 @@ func (task *LinkTask) WaitPre() interface{} {
 	return nil
 }
 
-type CorsLink struct {
+type WorkersLink struct {
 	sync.Mutex
 	sync.WaitGroup
 	tag     string
@@ -172,7 +172,7 @@ type CorsLink struct {
 	running bool
 }
 
-func (c *CorsLink) runLoop(partition int) {
+func (c *WorkersLink) runLoop(partition int) {
 	Go(func() {
 		// logDebug("cors %v child-%v start", c.tag, partition)
 		defer func() {
@@ -190,9 +190,9 @@ func (c *CorsLink) runLoop(partition int) {
 	})
 }
 
-func (c *CorsLink) Go(h func(task *LinkTask)) error {
+func (c *WorkersLink) Go(h func(task *LinkTask)) error {
 	if !c.running {
-		return ErrCorsStopped
+		return ErrWorkersStopped
 	}
 	c.Add(1)
 
@@ -216,9 +216,9 @@ func (c *CorsLink) Go(h func(task *LinkTask)) error {
 	return nil
 }
 
-// func (c *CorsLink) GoWithTimeout(h func(task *LinkTask), to time.Duration) error {
+// func (c *WorkersLink) GoWithTimeout(h func(task *LinkTask), to time.Duration) error {
 // 	if !c.running {
-// 		return ErrCorsStopped
+// 		return ErrWorkersStopped
 // 	}
 // 	c.Add(1)
 // 	c.Lock()
@@ -243,18 +243,18 @@ func (c *CorsLink) Go(h func(task *LinkTask)) error {
 // 		c.pre = task
 // 	case <-time.After(to):
 // 		c.Done()
-// 		return ErrCorsTimeout
+// 		return ErrWorkersTimeout
 // 	}
 // 	return nil
 // }
 
-func (c *CorsLink) Stop() {
+func (c *WorkersLink) Stop() {
 	c.running = false
 	close(c.ch)
 	c.Wait()
 }
 
-func (c *CorsLink) StopAsync() {
+func (c *WorkersLink) StopAsync() {
 	Go(func() {
 		c.running = false
 		close(c.ch)
@@ -262,8 +262,8 @@ func (c *CorsLink) StopAsync() {
 	})
 }
 
-func NewCorsLink(tag string, qCap int, corNum int) *CorsLink {
-	c := &CorsLink{
+func NewWorkersLink(tag string, qCap int, corNum int) *WorkersLink {
+	c := &WorkersLink{
 		tag:     tag,
 		ch:      make(chan *LinkTask, qCap),
 		running: true,
