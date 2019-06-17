@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/vmihailenco/msgpack"
 	"math/rand"
+	"time"
 	"unsafe"
 )
 
@@ -44,6 +45,26 @@ func RandCodeString(n int) string {
 		b[i] = numsBytes[rand.Intn(len(numsBytes))]
 	}
 	return string(b)
+}
+
+func ShuffleString(s string) string {
+	r := rand.New(rand.NewSource(time.Now().Unix()))
+	ret := make([]byte, len(s))
+	perm := r.Perm(len(s))
+	for i, randIndex := range perm {
+		ret[i] = s[randIndex]
+	}
+	return string(ret)
+}
+
+func ShuffleBytes(b []byte) []byte {
+	r := rand.New(rand.NewSource(time.Now().Unix()))
+	ret := make([]byte, len(b))
+	perm := r.Perm(len(b))
+	for i, randIndex := range perm {
+		ret[i] = b[randIndex]
+	}
+	return ret
 }
 
 func Float2String(v interface{}) map[string]interface{} {
