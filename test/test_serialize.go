@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bytes"
+	"encoding/gob"
 	"fmt"
 	"github.com/json-iterator/go"
 	"github.com/vmihailenco/msgpack"
@@ -27,6 +29,47 @@ type B struct {
 	ArrS    []string
 	Stru    A
 	ArrStru []A
+}
+
+func testGob() {
+	b := &B{
+		ArrS: []string{"abc", "测试数据111", "hello world"},
+		Stru: A{
+			Str:  "a string",
+			Data: []byte("a data"),
+			Int:  10998,
+			Bool: true,
+		},
+		ArrStru: []A{
+			A{
+				Str:  "a string",
+				Data: []byte("a data"),
+				Int:  10998,
+				Bool: true,
+			},
+			A{
+				Str:  "a string",
+				Data: []byte("a data"),
+				Int:  10998,
+				Bool: true,
+			},
+		},
+	}
+	ret := &B{}
+	data := []byte{}
+	t := time.Now()
+	for i := int64(0); i < loop; i++ {
+		buffer := &bytes.Buffer{}
+		gob.NewEncoder(buffer).Encode(b)
+		data = buffer.Bytes()
+		if err := gob.NewDecoder(bytes.NewBuffer(data)).Decode(ret); err != nil {
+			panic(fmt.Errorf("gob.Unmarshal failed: ", err))
+		}
+
+	}
+	tused := time.Since(t)
+	fmt.Printf("gob len: %v, equal: %v, %v\n", len(data), ret.ArrStru[1].Str == b.ArrStru[1].Str, ret.ArrStru[1].Int == b.ArrStru[1].Int)
+	fmt.Printf("gob: %v, %v / ns\n", tused.Seconds(), tused.Nanoseconds()/loop)
 }
 
 func testBson() {
@@ -145,6 +188,7 @@ func testMsgpack() {
 }
 
 func main() {
+	testGob()
 	testBson()
 	testJson()
 	testMsgpack()
