@@ -8,21 +8,10 @@ import (
 	"unsafe"
 )
 
-const (
-	numsBytes     = "1234567890"
-	letterBytes   = "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-	inviteLetters = "YHXJ4W3U2TMGZQBED8R76NVCSLK95FPA"
+var (
+	numsBytes   = "1234567890"
+	letterBytes = "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 )
-
-func Num2InviteCode(n int64) string {
-	s := ""
-	max := int64(len(inviteLetters))
-	for i := 0; n > 0 || i < 6; i++ {
-		s = string(inviteLetters[n%max]) + s
-		n = n / max
-	}
-	return s
-}
 
 func BytesToStr(b []byte) string {
 	return *(*string)(unsafe.Pointer(&b))
