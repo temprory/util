@@ -1,7 +1,7 @@
 package util
 
 var (
-	b32RandLetters   = "YHXJ4W3U2TMGZQBED8R76NVCSLK95FPA"
+	b32RandLetters   = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"
 	b32RandLetterMap = map[rune]int64{}
 )
 
