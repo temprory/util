@@ -20,7 +20,7 @@ func (loader *ConfigLoader) Add(configKey string, configFieled string, onUpdate 
 	defer loader.Unlock()
 
 	var preConfStr string
-	 var timer *time.Timer
+	var timer *time.Timer
 
 	if loader.updateInterval > 0 {
 		timer = time.NewTimer(loader.updateInterval)
